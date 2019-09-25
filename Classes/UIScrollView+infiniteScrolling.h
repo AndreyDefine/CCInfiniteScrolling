@@ -12,11 +12,11 @@
 
 /// Add the action handler that will be triggered when scrollview has been scrolled to top.
 /// This action handler will be triggered once unless you call -infiniteScrollViewContentUpdated.
-- (void)addTopInfiniteScrollingWithActionHandler:(void (^)())actonHandler;
+- (void)addTopInfiniteScrollingWithActionHandler:(void (^)(void))actonHandler;
 
 /// Add the action handler that will trigger when scrollview has been scrolled to bottom.
 /// This action handler will be triggered once unless you call -(void)infiniteScrollViewContentUpdated.
-- (void)addBottomInfiniteScrollingWithActionHandler:(void (^)())actonHandler;
+- (void)addBottomInfiniteScrollingWithActionHandler:(void (^)(void))actonHandler;
 
 /// Temporary disable infinity scroll
 @property (nonatomic) BOOL infiniteScrollingDisabled;
@@ -37,18 +37,18 @@
 
 /// The view that will be shown on top/bottom of scrollView.
 /// Default infinityScrollingCustomView is transparent view with UIActivityIndicatorView.
-@property (nonatomic) IBOutlet UIView *infiniteScrollingCustomView;
+@property (nonatomic) UIView *infiniteScrollingCustomView;
 
 /// The view that will be shown on top/bottom of scrollView if infiniteScrollingBlockFailed is YES.
 /// Default infiniteScrollingCustomFailedView is button with reload image, clicking this button triggers action handler.
 /// You can change this image in all infiniteScrollingCustomFailedViews by +(void)setInfinityScrollingCustomBlockFailedImage:
-@property (nonatomic) IBOutlet UIView *infiniteScrollingCustomFailedView;
+@property (nonatomic) UIView *infiniteScrollingCustomFailedView;
 
 /// Change button image in all infiniteScrollingCustomFailedViews
 + (void)setInfinityScrollingCustomBlockFailedImage:(UIImage *)image;
 
 /// Default trigger offset is (self.height)
-@property (nonatomic) CGFloat infinityScrollingTriggerOffset;
+@property (nonatomic) NSNumber *infinityScrollingTriggerOffset;
 
 /// Change infinityScrollingTriggerOffset in all scrollViews
 + (void)setInfinityScrollingTriggerOffset:(CGFloat)triggerOffset;
@@ -60,12 +60,12 @@
 // instead of infiniteScrollingDisabled/infiniteScrollingBlockFailed/infiniteScrollingCustomView/infiniteScrollingCustomFailedView
 
 /// See infiniteScrollingCustomView
-@property (nonatomic) IBOutlet UIView *topInfiniteScrollingCustomView;
-@property (nonatomic) IBOutlet UIView *bottomInfiniteScrollingCustomView;
+@property (nonatomic) UIView *topInfiniteScrollingCustomView;
+@property (nonatomic) UIView *bottomInfiniteScrollingCustomView;
 
 /// See infiniteScrollingCustomFailedView
-@property (nonatomic) IBOutlet UIView *topInfiniteScrollingCustomFailedView;
-@property (nonatomic) IBOutlet UIView *bottomInfiniteScrollingCustomFailedView;
+@property (nonatomic) UIView *topInfiniteScrollingCustomFailedView;
+@property (nonatomic) UIView *bottomInfiniteScrollingCustomFailedView;
 
 /// See infiniteScrollingDisabled
 @property (nonatomic) BOOL topInfiniteScrollingDisabled;

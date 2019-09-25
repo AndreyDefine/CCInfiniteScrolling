@@ -10,7 +10,36 @@
 #import <JRSwizzle/JRSwizzle.h>
 #import <objc/runtime.h>
 #import "UIView+TKGeometry.h"
-#import "DPPPropertyAttribute.h"
+
+@interface ISBlockObjectContainer : NSObject
+
+@property (nonatomic, copy) void(^block)(void);
+- (instancetype)initWithBlock:(void(^)(void))block;
+
+@end
+
+@implementation ISBlockObjectContainer
+
+- (instancetype)initWithBlock:(void(^)(void))block
+{
+    self = [super init];
+    if (self) {
+        self.block = block;
+    }
+    return self;
+}
+
+
+@end
+
+#define ISCATEGORY_PROPERTY_GET(type, property) - (type) property { return objc_getAssociatedObject(self, @selector(property)); }
+#define ISCATEGORY_PROPERTY_SET(type, property, setter) - (void) setter (type) property { objc_setAssociatedObject(self, @selector(property), property, OBJC_ASSOCIATION_RETAIN_NONATOMIC); }
+#define ISCATEGORY_PROPERTY_GET_SET(type, property, setter) ISCATEGORY_PROPERTY_GET(type, property) ISCATEGORY_PROPERTY_SET(type, property, setter)
+
+
+#define ISCATEGORY_BLOCKPROPERTY_GET(type, property) - (type) property { return [objc_getAssociatedObject(self, @selector(property)) block]; }
+#define ISCATEGORY_BLOCKPROPERTY_SET(type, property, setter) - (void) setter (type) property { objc_setAssociatedObject(self, @selector(property), [[ISBlockObjectContainer alloc] initWithBlock:property], OBJC_ASSOCIATION_RETAIN_NONATOMIC); }
+#define ISCATEGORY_BLOCKPROPERTY_GET_SET(type, property, setter) ISCATEGORY_BLOCKPROPERTY_GET(type, property) ISCATEGORY_BLOCKPROPERTY_SET(type, property, setter)
 
 @implementation UIView (infiniteScrollRemoveAllSubviews)
 
@@ -27,15 +56,15 @@ static CGFloat is_infinityScrollingTriggerOffset = 0;
 
 @interface UIScrollView (infiniteScrollingPrivate)
 
-@property (nonatomic, copy) void(^is_topBlock)();
-@property (nonatomic, copy) void(^is_bottomBlock)();
+@property (nonatomic, copy) void(^is_topBlock)(void);
+@property (nonatomic, copy) void(^is_bottomBlock)(void);
 
-@property (nonatomic) BOOL is_topBlockInProgress;
-@property (nonatomic) BOOL is_topDisabled;
-@property (nonatomic) BOOL is_topUndisablingInProgress;
-@property (nonatomic) BOOL is_bottomBlockInProgress;
-@property (nonatomic) BOOL is_bottomDisabled;
-@property (nonatomic) BOOL is_bottomUndisablingInProgress;
+@property (nonatomic) NSNumber *is_topBlockInProgress;
+@property (nonatomic) NSNumber *is_topDisabled;
+@property (nonatomic) NSNumber *is_topUndisablingInProgress;
+@property (nonatomic) NSNumber *is_bottomBlockInProgress;
+@property (nonatomic) NSNumber *is_bottomDisabled;
+@property (nonatomic) NSNumber *is_bottomUndisablingInProgress;
 
 @property (nonatomic) NSValue *is_contentSize;
 @property (nonatomic) NSValue *is_contentInset;
@@ -48,18 +77,40 @@ static CGFloat is_infinityScrollingTriggerOffset = 0;
 //--------------------------------------------------------------------------------------------------------------------------------------------
 
 @implementation UIScrollView (infiniteScrollingPrivate)
-@dynamic is_topBlock, is_topBlockInProgress, is_topDisabled, is_topBox, is_topUndisablingInProgress;
-@dynamic is_bottomBlock, is_bottomBlockInProgress, is_bottomDisabled, is_bottomBox, is_bottomUndisablingInProgress;
-@dynamic is_contentSize, is_contentInset;
+
+ISCATEGORY_BLOCKPROPERTY_GET_SET(void(^)(void), is_topBlock, setIs_topBlock:)
+ISCATEGORY_PROPERTY_GET_SET(NSNumber *, is_topBlockInProgress, setIs_topBlockInProgress:)
+
+ISCATEGORY_BLOCKPROPERTY_GET_SET(void(^)(void), is_bottomBlock, setIs_bottomBlock:)
+ISCATEGORY_PROPERTY_GET_SET(NSNumber *, is_bottomBlockInProgress, setIs_bottomBlockInProgress:)
+
+ISCATEGORY_PROPERTY_GET_SET(NSNumber *, is_topDisabled, setIs_topDisabled:)
+ISCATEGORY_PROPERTY_GET_SET(NSNumber *, is_topBox, setIs_topBox:)
+ISCATEGORY_PROPERTY_GET_SET(NSNumber *, is_topUndisablingInProgress, setIs_topUndisablingInProgress:)
+
+ISCATEGORY_PROPERTY_GET_SET(NSNumber *, is_bottomDisabled, setIs_bottomDisabled:)
+ISCATEGORY_PROPERTY_GET_SET(NSNumber *, is_bottomBox, setIs_bottomBox:)
+ISCATEGORY_PROPERTY_GET_SET(NSNumber *, is_bottomUndisablingInProgress, setIs_bottomUndisablingInProgress:)
+
+ISCATEGORY_PROPERTY_GET_SET(NSValue *, is_contentSize, setIs_contentSize:)
+ISCATEGORY_PROPERTY_GET_SET(NSValue *, is_contentInset, setIs_contentInset:)
+
 @end
 
 //--------------------------------------------------------------------------------------------------------------------------------------------
 
 @implementation UIScrollView (infiniteScrolling)
-@dynamic infiniteScrollingCustomView, infiniteScrollingCustomFailedView;
-@dynamic infiniteScrollingDisabled, infiniteScrollingBlockFailed, infinityScrollingTriggerOffset;
-@dynamic topInfiniteScrollingCustomView, topInfiniteScrollingCustomFailedView;
-@dynamic bottomInfiniteScrollingCustomView, bottomInfiniteScrollingCustomFailedView;
+@dynamic infiniteScrollingDisabled, infiniteScrollingBlockFailed;
+
+
+ISCATEGORY_PROPERTY_GET_SET(UIView *, infiniteScrollingCustomView, setInfiniteScrollingCustomView:)
+ISCATEGORY_PROPERTY_GET_SET(UIView *, infiniteScrollingCustomFailedView, setInfiniteScrollingCustomFailedView:)
+ISCATEGORY_PROPERTY_GET_SET(UIView *, topInfiniteScrollingCustomView, setTopInfiniteScrollingCustomView:)
+ISCATEGORY_PROPERTY_GET_SET(UIView *, topInfiniteScrollingCustomFailedView, setTopInfiniteScrollingCustomFailedView:)
+
+ISCATEGORY_PROPERTY_GET_SET(NSNumber *, infinityScrollingTriggerOffset, setInfinityScrollingTriggerOffset:)
+ISCATEGORY_PROPERTY_GET_SET(UIView *, bottomInfiniteScrollingCustomView, setBottomInfiniteScrollingCustomView:)
+ISCATEGORY_PROPERTY_GET_SET(UIView *, bottomInfiniteScrollingCustomFailedView, setBottomInfiniteScrollingCustomFailedView:)
 
 + (void)setInfinityScrollingCustomBlockFailedImage:(UIImage *)image
 {
@@ -82,7 +133,7 @@ static CGFloat is_infinityScrollingTriggerOffset = 0;
     return view;
 }
 
-- (void)addTopInfiniteScrollingWithActionHandler:(void (^)())actonHandler
+- (void)addTopInfiniteScrollingWithActionHandler:(void (^)(void))actonHandler
 {
     self.is_topBlock = actonHandler;
     
@@ -98,7 +149,7 @@ static CGFloat is_infinityScrollingTriggerOffset = 0;
     [self addView:self.topInfiniteScrollingCustomView toView:self.is_topBox];
 }
 
-- (void)addBottomInfiniteScrollingWithActionHandler:(void (^)())actonHandler
+- (void)addBottomInfiniteScrollingWithActionHandler:(void (^)(void))actonHandler
 {
     self.is_bottomBlock = actonHandler;
     
@@ -127,13 +178,13 @@ static CGFloat is_infinityScrollingTriggerOffset = 0;
 
 - (void)infiniteScrollViewContentUpdated
 {
-    self.is_topBlockInProgress = NO;
-    self.is_bottomBlockInProgress = NO;
+    self.is_topBlockInProgress = @NO;
+    self.is_bottomBlockInProgress = @NO;
 }
 
 - (CGFloat)is_infinityScrollingTriggerOffset
 {
-    return self.infinityScrollingTriggerOffset ?: (is_infinityScrollingTriggerOffset ?: self.height);
+    return self.infinityScrollingTriggerOffset.floatValue ?: (is_infinityScrollingTriggerOffset ?: self.height);
 }
 
 - (BOOL)is_checkContentOffset:(BOOL *)top
@@ -169,23 +220,23 @@ static CGFloat is_infinityScrollingTriggerOffset = 0;
     if ([self is_checkContentOffset:0])
     {
         double delayInSeconds = .05;
-        if (self.is_topUndisablingInProgress || self.is_bottomUndisablingInProgress)
+        if (self.is_topUndisablingInProgress.boolValue || self.is_bottomUndisablingInProgress.boolValue)
             delayInSeconds = .5;
         dispatch_time_t popTime = dispatch_time(DISPATCH_TIME_NOW, (int64_t)(delayInSeconds * NSEC_PER_SEC));
         dispatch_after(popTime, dispatch_get_main_queue(), ^(void){
-            if (self.is_topUndisablingInProgress || self.is_bottomUndisablingInProgress)
+            if (self.is_topUndisablingInProgress.boolValue || self.is_bottomUndisablingInProgress.boolValue)
                 return;
             BOOL top;
             if (![self is_checkContentOffset:&top])
                 return;
-            if (top && !self.is_topBlockInProgress && !self.topInfiniteScrollingBlockFailed)
+            if (top && !self.is_topBlockInProgress.boolValue && !self.topInfiniteScrollingBlockFailed)
             {
-                self.is_topBlockInProgress = YES;
+                self.is_topBlockInProgress = @YES;
                 self.is_topBlock();
             }
-            else if (!top && !self.is_bottomBlockInProgress && !self.bottomInfiniteScrollingBlockFailed)
+            else if (!top && !self.is_bottomBlockInProgress.boolValue && !self.bottomInfiniteScrollingBlockFailed)
             {
-                self.is_bottomBlockInProgress = YES;
+                self.is_bottomBlockInProgress = @YES;
                 self.is_bottomBlock();
             }
         });
@@ -294,41 +345,41 @@ static CGFloat is_infinityScrollingTriggerOffset = 0;
 
 - (void)setTopInfiniteScrollingDisabled:(BOOL)topInfiniteScrollingDisabled
 {
-    if (self.is_topDisabled && !topInfiniteScrollingDisabled)
+    if (self.is_topDisabled.boolValue && !topInfiniteScrollingDisabled)
     {
-        self.is_topUndisablingInProgress = YES;
+        self.is_topUndisablingInProgress = @YES;
         dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(.5 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
-            self.is_topUndisablingInProgress = NO;
+            self.is_topUndisablingInProgress = @NO;
         });
     }
     CGFloat contentOffsetY = self.contentOffsetY;
     CGFloat contentHeight = self.contentHeight;
-    self.is_topDisabled = topInfiniteScrollingDisabled;
+    self.is_topDisabled = @(topInfiniteScrollingDisabled);
     [self is_updateContent];
     self.contentOffsetY = contentOffsetY + (self.contentHeight - contentHeight);
 }
 
 - (BOOL)topInfiniteScrollingDisabled
 {
-    return self.is_topDisabled;
+    return self.is_topDisabled.boolValue;
 }
 
 - (void)setBottomInfiniteScrollingDisabled:(BOOL)bottomInfiniteScrollingDisabled
 {
-    if (self.is_bottomDisabled && !bottomInfiniteScrollingDisabled)
+    if (self.is_bottomDisabled.boolValue && !bottomInfiniteScrollingDisabled)
     {
-        self.is_bottomUndisablingInProgress = YES;
+        self.is_bottomUndisablingInProgress = @YES;
         dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(.5 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
-            self.is_bottomUndisablingInProgress = NO;
+            self.is_bottomUndisablingInProgress = @NO;
         });
     }
-    self.is_bottomDisabled = bottomInfiniteScrollingDisabled;
+    self.is_bottomDisabled = @(bottomInfiniteScrollingDisabled);
     [self is_updateContent];
 }
 
 - (BOOL)bottomInfiniteScrollingDisabled
 {
-    return self.is_bottomDisabled;
+    return self.is_bottomDisabled.boolValue;
 }
 
 //--------------------------------------------------------------------------------------------------------------------------------------------
@@ -341,7 +392,7 @@ static CGFloat is_infinityScrollingTriggerOffset = 0;
     static UIImage *podImage;
     static dispatch_once_t onceToken;
     dispatch_once(&onceToken, ^{
-        NSBundle *podBundle = [NSBundle bundleForClass:DPPPropertyAttribute.class];
+        NSBundle *podBundle = [NSBundle bundleForClass:ISBlockObjectContainer.class];
         podImage = [UIImage imageNamed:@"CCInfiniteScrolling.bundle/infinite_scrolling_reload" inBundle:podBundle compatibleWithTraitCollection:nil];
     });
     [button setImage:is_blockFailedImage ?: podImage forState:UIControlStateNormal];
